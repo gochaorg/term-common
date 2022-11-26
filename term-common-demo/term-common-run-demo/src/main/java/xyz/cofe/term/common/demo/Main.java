@@ -7,6 +7,7 @@ import xyz.cofe.term.win.ConnectToConsole;
 import xyz.cofe.term.win.WinConsole;
 
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 public class Main {
     public static void main(String[] args){
@@ -49,10 +50,12 @@ public class Main {
         Background,
         Foreground,
         BackgroundLight,
-        ForegroundLight
+        ForegroundLight,
+        TermSize
     }
 
     private InputState inputState = InputState.Normal;
+    private StringBuilder enterLine = new StringBuilder();
 
     private void showState(Console console){
         switch (inputState){
@@ -75,6 +78,9 @@ public class Main {
             case ForegroundLight:
                 console.setTitle("foreground light expect 1...8");
                 break;
+            case TermSize:
+                console.setTitle("enter terminal size: width height");
+                break;
         }
     }
 
@@ -85,9 +91,9 @@ public class Main {
                 "c - cursor off | C - cursor on\n" +
                 "i - log input off | I - log input on\n" +
                 "arrow left,right,up,down - move cursor\n" +
-                "space - write *"
+                "space - write *\n" +
+                "s - read terminal\n"
         );
-
     }
 
     private void run(Console console){
@@ -126,9 +132,49 @@ public class Main {
                         colorInput(input.get(),true).ifPresent(console::setForeground);
                         inputState = InputState.Normal;
                         break;
+                    case TermSize:
+                        inputTermSize(console, input.get());
+                        break;
                 }
                 showState(console);
             }
+        }
+    }
+
+    private void inputTermSize(Console console, InputEvent inputEvent){
+        if( inputEvent instanceof InputCharEvent ){
+            var ev = (InputCharEvent)inputEvent;
+            enterLine.append(ev.getChar());
+            console.write(""+ev.getChar());
+        }else if( inputEvent instanceof InputKeyEvent ){
+            var ev = (InputKeyEvent)inputEvent;
+            switch ( ev.getKey() ){
+                case Enter:
+                    inputState = InputState.Normal;
+                    enterTerminalSize(console, enterLine.toString());
+                    break;
+                case Backspace:
+                    if( enterLine.length()>0 ){
+                        enterLine.deleteCharAt(enterLine.length()-1);
+                        var cur = console.getCursorPosition();
+                        console.setCursorPosition(cur.move(-1,0));
+                        console.write(" ");
+                        console.setCursorPosition(cur.move(-1, 0));
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    private final Pattern termSizePattern = Pattern.compile("\\s*(?<w>\\d+)\\s+(?<h>\\d+).*?");
+    private void enterTerminalSize(Console console, String line){
+        var m = termSizePattern.matcher(line);
+        if( m.matches() ){
+            var w = Integer.parseInt(m.group("w"));
+            var h = Integer.parseInt(m.group("h"));
+            console.setSize(new Size(w,h));
         }
     }
 
@@ -193,6 +239,18 @@ public class Main {
                 case 'F':
                     inputState = InputState.ForegroundLight;
                     break;
+                case 's':
+                    console.write("terminal "+console.getSize()+"\n");
+                    break;
+                case 'S':
+                    console.write("\n" +
+                        "enter terminal size (width height)\n" +
+                        "  sample: 85 30 <enter>\n" +
+                        ": ");
+                    console.setCursorVisible(true);
+                    enterLine.setLength(0);
+                    inputState = InputState.TermSize;
+                    break;
                 default:
                     break;
             }
@@ -240,6 +298,11 @@ public class Main {
                     console.write(" " + wev.getEvent());
                 }
                 console.write("\n");
+            }
+        }else if( inputEvent instanceof InputResizeEvent ){
+            if( logInput ){
+                var ev = (InputResizeEvent)inputEvent;
+                console.write("terminal "+ev.size());
             }
         }
     }

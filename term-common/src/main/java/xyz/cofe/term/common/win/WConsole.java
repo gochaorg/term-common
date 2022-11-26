@@ -55,8 +55,8 @@ public class WConsole implements Console, GetTitle {
     @Override
     public void setSize(Size size) {
         if (size == null) throw new IllegalArgumentException("size==null");
-        winConsole.getOutput().bufferSize(size.width(), size.height());
         winConsole.getOutput().windowRect(0, 0, size.width() - 1, size.height() - 1);
+        winConsole.getOutput().bufferSize(size.width(), size.height());
     }
 
     @Override
