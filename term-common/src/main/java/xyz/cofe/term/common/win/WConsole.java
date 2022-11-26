@@ -325,7 +325,7 @@ public class WConsole implements Console, GetTitle {
         }
 
         public void pressed(Consumer<MouseButtonStateDiff> consumer){
-            if( consumer!=null )throw new IllegalArgumentException("consumer==null");
+            if( consumer==null )throw new IllegalArgumentException("consumer==null");
             if( leftDown )consumer.accept(new MouseButtonStateDiff(MouseButton.Left, true));
             if( rightDown )consumer.accept(new MouseButtonStateDiff(MouseButton.Right, true));
             if( middleDown )consumer.accept(new MouseButtonStateDiff(MouseButton.Middle, true));
@@ -343,7 +343,7 @@ public class WConsole implements Console, GetTitle {
     }
 
     private static boolean isMouseButtonEvent(xyz.cofe.term.win.InputMouseEvent me){
-        return me.isMouseMove() && !me.isVerticalMouseWheel() && !me.isHorizontalMouseWheel();
+        return !me.isMouseMove() && !me.isVerticalMouseWheel() && !me.isHorizontalMouseWheel();
     }
 
     private List<MouseButtonState> mouseButtonStates = new ArrayList<>();
@@ -360,65 +360,11 @@ public class WConsole implements Console, GetTitle {
         for( var ev : events ){
             if( ev instanceof xyz.cofe.term.win.InputMouseEvent ){
                 var me = (xyz.cofe.term.win.InputMouseEvent)ev;
-
-                // События мыши имеют такую последовательность
-                // mouse event
-                //
-                // left click
-                //   InputMouseEvent{x=0,y=0,wheel=0,LeftButton}
-                //   InputMouseEvent{x=0,y=0,wheel=0}
-                //   InputMouseEvent{x=0,y=0,wheel=0,MouseMove}
-                //
-                // right click
-                //   InputMouseEvent{x=0,y=0,wheel=0,RightButton}
-                //   InputMouseEvent{x=0,y=0,wheel=0}
-                //   InputMouseEvent{x=0,y=0,wheel=0,MouseMove}
-                //
-                // 1 ое - нет события отпускания клавиши
-                // 2 ое - не известно какая клавиша была нажата, а какая отпущена
-                // на основании истории состояния клавиш - можно сказать что было нажата или отпущено
-
-                if( isMouseButtonEvent(me) ){
-                    // button down or release
-                    var butState = new MouseButtonState(me);
-                    if( butState.getPressedButtonsCount()>0 ){
-                        // button down or release
-                        if( mouseButtonStates.isEmpty() ){
-                            // button down - клавиша была нажата и история пуста
-                            butState.pressed( pEv -> {
-                                result.add(new WinInputMouseButtonEvent(pEv.button,true,new Position(me.getX(), me.getY()), me));
-                            });
-                        }else{
-                            // button down or release - какая то клавиша была нажата или отпущена
-                            // search what button changed
-                            for( int i=mouseButtonStates.size()-1; i>=0; i-- ){
-                                var prevState = mouseButtonStates.get(i);
-                                if( prevState.diffCount(butState)>0 ){
-                                    butState.diffs(prevState, changes -> {
-                                        result.add(new WinInputMouseButtonEvent(changes.button, changes.pressed, new Position(me.getX(), me.getY()), me));
-                                    });
-                                }
-                            }
-                        }
-                    }else{
-                        if( mouseButtonStates.isEmpty() ){
-                            // skip - ни какая клавиша не была нажата, и история пуста
-                        }else{
-                            // button release - клавиша была отпущена - ищем какая была отпущена
-                            for( int i=mouseButtonStates.size()-1; i>=0; i-- ){
-                                var prevState = mouseButtonStates.get(i);
-                                if( prevState.diffCount(butState)>0 ){
-                                    butState.diffs(prevState, changes -> {
-                                        result.add(new WinInputMouseButtonEvent(changes.button, changes.pressed, new Position(me.getX(), me.getY()), me));
-                                    });
-                                }
-                            }
-                        }
-                    }
-                    mouseButtonStates.add(butState);
+                if( isMouseButtonEvent(me) ) {
+                    var st = new MouseButtonState(me);
+                    parse(result::add, me, st);
+                    mouseButtonStates.add(st);
                     limit_mouseButtonStates();
-                } else {
-                    // other mouse event
                 }
             }else if( ev instanceof xyz.cofe.term.win.InputKeyEvent ){
                 var ke = (xyz.cofe.term.win.InputKeyEvent)ev;
@@ -429,5 +375,34 @@ public class WConsole implements Console, GetTitle {
             }
         }
         return result;
+    }
+
+    private Optional<MouseButtonState> lastMouseButtonState(){
+        if( mouseButtonStates.isEmpty() )return Optional.empty();
+        return Optional.of(
+            mouseButtonStates.get(mouseButtonStates.size()-1)
+        );
+    }
+
+    private void parse(Consumer<InputEvent> consumer, xyz.cofe.term.win.InputMouseEvent me, MouseButtonState currentState) {
+        lastMouseButtonState().ifPresentOrElse( lastState->{
+            if( lastState.diffCount(currentState)>0 ){
+                currentState.diffs(lastState, changes -> {
+                    var ev = new WinInputMouseButtonEvent(changes.button, changes.pressed, new Position(me.getX(),me.getY()), me);
+                    consumer.accept(ev);
+                });
+            }
+        }, ()->{
+            currentState.pressed( pressed -> {
+                var ev = new WinInputMouseButtonEvent(pressed.button, pressed.pressed, new Position(me.getX(),me.getY()), me);
+                consumer.accept(ev);
+            });
+        });
+    }
+
+    @Override
+    public void write(String text) {
+        if( text==null )throw new IllegalArgumentException("text==null");
+        winConsole.write(text);
     }
 }

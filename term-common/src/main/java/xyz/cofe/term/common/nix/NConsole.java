@@ -306,4 +306,14 @@ public class NConsole implements Console {
         }
         return Optional.empty();
     }
+
+    @Override
+    public void write(String text) {
+        if( text==null )throw new IllegalArgumentException("text==null");
+        try {
+            terminal.putString(text);
+        } catch (IOException e) {
+            throw new ConsoleError(e);
+        }
+    }
 }

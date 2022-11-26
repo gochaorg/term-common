@@ -1,8 +1,9 @@
 package xyz.cofe.term.common;
 
+/** Возвращает заголовок */
 public interface GetTitle {
     /**
-     * Устанавливает заголовок
+     * Возвращает заголовок
      * @return заголовок
      */
     String getTitle();

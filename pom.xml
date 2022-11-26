@@ -12,6 +12,7 @@
     <modules>
         <module>lanterna-test</module>
         <module>term-common</module>
+        <module>term-common-demo</module>
     </modules>
 
     <properties>

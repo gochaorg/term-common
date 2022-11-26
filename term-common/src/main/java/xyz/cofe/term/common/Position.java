@@ -44,4 +44,12 @@ public class Position {
      * @return координата
      */
     public int y(){ return y; }
+
+    @Override
+    public String toString() {
+        return "Position{" +
+            "x=" + x +
+            ", y=" + y +
+            '}';
+    }
 }

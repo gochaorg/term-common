@@ -59,4 +59,10 @@ public interface Console extends AutoCloseable {
      * @return событие
      */
     Optional<InputEvent> read();
+
+    /**
+     * Запись текста в позицию курсора
+     * @param text текст
+     */
+    void write(String text);
 }

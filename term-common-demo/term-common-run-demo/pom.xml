@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>term-common-demo</artifactId>
+        <groupId>xyz.cofe</groupId>
+        <version>0.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>term-common-run-demo</artifactId>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <runner.app.name>app</runner.app.name>
+        <runner.app.main-class>xyz.cofe.term.common.demo.Main</runner.app.main-class>
+        <runner.app.bat.name>${runner.app.name}.bat</runner.app.bat.name>
+        <runner.app.java.exe>javaw</runner.app.java.exe>
+        <runner.app.java.opts>-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005</runner.app.java.opts>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>xyz.cofe</groupId>
+            <artifactId>term-common-prepare</artifactId>
+            <version>0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>xyz.cofe</groupId>
+            <artifactId>term-common</artifactId>
+            <version>0.1-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>exec-maven-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-bin</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>runner.GenerateBin</mainClass>
+                            <arguments>
+                                <argument>-mainClass</argument>
+                                <argument>${runner.app.main-class}</argument>
+
+                                <argument>-appName</argument>
+                                <argument>${runner.app.name}</argument>
+
+                                <argument>-repoName</argument>
+                                <argument>jars</argument>
+
+                                <argument>-javaExe</argument>
+                                <argument>${runner.app.java.exe}</argument>
+
+                                <argument>-out</argument>
+                                <argument>${project.build.directory}/runner/bin/${runner.app.bat.name}</argument>
+
+                                <argument>-charset</argument>
+                                <argument>CP1251</argument>
+
+                                <argument>-javaOpts</argument>
+                                <argument>${runner.app.java.opts}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/runner/jars</outputDirectory>
+                            <includeScope>compile</includeScope>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>exec-maven-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-bin</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>runner.CopyFile</mainClass>
+                            <arguments>
+                                <argument>-from</argument>
+                                <argument>${basedir}/target/${build.finalName}.jar</argument>
+
+                                <argument>-to</argument>
+                                <argument>${basedir}/target/runner/jars/${build.finalName}.jar</argument>
+
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
