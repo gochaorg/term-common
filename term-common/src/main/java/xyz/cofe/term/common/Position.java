@@ -45,6 +45,24 @@ public class Position {
      */
     public int y(){ return y; }
 
+    /**
+     * Клонирует и указывает новые координаты
+     * @param y координата
+     * @return клон с новыми координатами
+     */
+    public Position y(int y){
+        return new Position(x,y);
+    }
+
+    /**
+     * Клонирует и указывает новые координаты
+     * @param x координата
+     * @return клон с новыми координатами
+     */
+    public Position x(int x){
+        return new Position(x,y);
+    }
+
     @Override
     public String toString() {
         return "Position{" +
