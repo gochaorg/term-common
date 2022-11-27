@@ -1,6 +1,5 @@
 package xyz.cofe.term.common.demo;
 
-import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.MouseCaptureMode;
 import com.googlecode.lanterna.terminal.ansi.TelnetTerminalServer;
 import com.googlecode.lanterna.terminal.ansi.UnixTerminal;
@@ -15,6 +14,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 public class Main {
@@ -49,6 +52,9 @@ public class Main {
                         case "-con":
                         case "-console":
                             state = "-con";
+                            break;
+                        case "-asyncReader":
+                            main.asyncReader = true;
                             break;
                     }
                     break;
@@ -221,6 +227,39 @@ public class Main {
 
     private InputState inputState = InputState.Normal;
     private final StringBuilder enterLine = new StringBuilder();
+    private static class AsyncReader extends Thread {
+        private final NixConsole nixConsole;
+        private final Queue<InputEvent> events;
+
+        public AsyncReader(Queue<InputEvent> events, NixConsole nixConsole){
+            if( nixConsole==null )throw new IllegalArgumentException("nixConsole == null");
+            if( events==null )throw new IllegalArgumentException("events == null");
+            this.nixConsole = nixConsole;
+            this.events = events;
+            setDaemon(true);
+        }
+
+        private final AtomicBoolean stop = new AtomicBoolean(false);
+        public void stopReading(){
+            stop.set(true);
+        }
+
+        @Override
+        public void run() {
+            while (!stop.get()){
+                nixConsole.readSync().ifPresent(events::add);
+            }
+        }
+    }
+
+    private final ConcurrentLinkedQueue<InputEvent> asyncEventsQueue = new ConcurrentLinkedQueue<>();
+    private final Optional<InputEvent> asyncRead(){
+        var ev = asyncEventsQueue.poll();
+        return ev!=null ? Optional.of(ev) : Optional.empty();
+    }
+    private long cpuThrottling = 1;
+
+    private boolean asyncReader = false;
 
     private void run(Console console){
         showHelp(console);
@@ -229,12 +268,21 @@ public class Main {
         inputEventCount = 0;
         logInput = true;
         cursorVisible = true;
+
+        Optional<AsyncReader> asyncReaderThread = asyncReader && console instanceof NixConsole ?
+            Optional.of(new AsyncReader(asyncEventsQueue, ((NixConsole)console))) : Optional.empty();
+
+        asyncReaderThread.ifPresent(Thread::start);
+
+        Supplier<Optional<InputEvent>> read
+            = asyncReaderThread.isEmpty() ? console::read : this::asyncRead;
+
         while (!stop){
-            var input = console.read();
+            var input = read.get();
             if( input.isEmpty() ){
                 try {
                     //noinspection BusyWait
-                    Thread.sleep(100);
+                    Thread.sleep(cpuThrottling);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -266,6 +314,15 @@ public class Main {
                 showStateInTitle(console);
             }
         }
+
+        asyncReaderThread.ifPresent(th -> {
+            System.out.println("reader stopping");
+            while (th.isAlive()) {
+                th.stopReading();
+                th.interrupt();
+            }
+            System.out.println("reader stopped");
+        });
     }
 
     private void showStateInTitle(Console console){

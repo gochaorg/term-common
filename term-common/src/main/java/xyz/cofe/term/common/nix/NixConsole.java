@@ -187,6 +187,14 @@ public class NixConsole implements Console {
         }
     }
 
+    public Optional<InputEvent> readSync() {
+        try {
+            return read(terminal.readInput());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private Optional<InputEvent> read(KeyStroke ks){
         if( ks instanceof MouseAction ){
             return readMouse((MouseAction) ks);
