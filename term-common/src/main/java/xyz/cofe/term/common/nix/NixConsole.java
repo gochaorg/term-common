@@ -78,6 +78,15 @@ public class NixConsole implements Console {
     }
 
     @Override
+    public void setCursorPosition(int x, int y) {
+        try {
+            terminal.setCursorPosition(x,y);
+        } catch (IOException e) {
+            throw new ConsoleError(e);
+        }
+    }
+
+    @Override
     public Size getSize() {
         try {
             var tsize = terminal.getTerminalSize();

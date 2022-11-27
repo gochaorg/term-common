@@ -45,6 +45,11 @@ public class WinConsole implements Console, GetTitle {
     }
 
     @Override
+    public void setCursorPosition(int x, int y) {
+        winConsole.cursor(x, y);
+    }
+
+    @Override
     public Size getSize() {
         var info = winConsole.getScreenBufferInfo();
         return new Size(info.getWidth(), info.getHeight());

@@ -25,6 +25,15 @@ public interface Console extends AutoCloseable {
     void setCursorPosition(Position position);
 
     /**
+     * Устанавливает позицию курсора
+     * @param x координаты
+     * @param y координаты
+     */
+    default void setCursorPosition(int x,int y) {
+        setCursorPosition(new Position(x,y));
+    }
+
+    /**
      * Возвращает размер терминала
      * @return размер терминала
      */
