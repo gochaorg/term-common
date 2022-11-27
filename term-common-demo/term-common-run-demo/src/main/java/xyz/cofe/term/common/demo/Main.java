@@ -10,18 +10,16 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 public class Main {
+    private int delayForAttachDebuggerInSeconds = 0;
+
     public static void main(String[] args){
         var main = new Main();
 
-        var delay_for_debug = System.getenv("DELAY_FOR_DEBUG");
-        if( delay_for_debug!=null ){
-            if( delay_for_debug.matches("\\d+") ){
+        var delayForDebug = System.getenv("DELAY_FOR_DEBUG");
+        if( delayForDebug!=null ){
+            if( delayForDebug.matches("\\d+") ){
                 System.out.println("delay for attach debugger");
-                try {
-                    Thread.sleep(Integer.parseInt(delay_for_debug) * 1000L);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+                main.delayForAttachDebuggerInSeconds = Integer.parseInt(delayForDebug);
             }
         }
 
@@ -29,14 +27,29 @@ public class Main {
     }
 
     private void run(){
+        delayForDebuggerAttach();
+
+        // build console
         var winConsole = new WinConsole(new ConnectToConsole.AllocConsole());
         winConsole.setInputMode(
             winConsole.getInputMode().quickEdit(false).mouse(true)
         );
+
         try (Console console = new WConsole(winConsole)) {
             run(console);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void delayForDebuggerAttach() {
+        if( delayForAttachDebuggerInSeconds>0 ){
+            System.out.println("delay for attach debugger");
+            try {
+                Thread.sleep(delayForAttachDebuggerInSeconds * 1000L);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -57,7 +70,7 @@ public class Main {
     private InputState inputState = InputState.Normal;
     private StringBuilder enterLine = new StringBuilder();
 
-    private void showState(Console console){
+    private void showStateInTitle(Console console){
         switch (inputState){
             case Normal:{
                     var pos = console.getCursorPosition();
@@ -114,29 +127,29 @@ public class Main {
             }else {
                 switch (inputState){
                     case Normal:
-                        processInput(console, input.get());
+                        inputDefault(console, input.get());
                         break;
                     case Background:
-                        colorInput(input.get(),false).ifPresent(console::setBackground);
+                        inputColor(input.get(),false).ifPresent(console::setBackground);
                         inputState = InputState.Normal;
                         break;
                     case BackgroundLight:
-                        colorInput(input.get(),true).ifPresent(console::setBackground);
+                        inputColor(input.get(),true).ifPresent(console::setBackground);
                         inputState = InputState.Normal;
                         break;
                     case Foreground:
-                        colorInput(input.get(),false).ifPresent(console::setForeground);
+                        inputColor(input.get(),false).ifPresent(console::setForeground);
                         inputState = InputState.Normal;
                         break;
                     case ForegroundLight:
-                        colorInput(input.get(),true).ifPresent(console::setForeground);
+                        inputColor(input.get(),true).ifPresent(console::setForeground);
                         inputState = InputState.Normal;
                         break;
                     case TermSize:
                         inputTermSize(console, input.get());
                         break;
                 }
-                showState(console);
+                showStateInTitle(console);
             }
         }
     }
@@ -151,7 +164,7 @@ public class Main {
             switch ( ev.getKey() ){
                 case Enter:
                     inputState = InputState.Normal;
-                    enterTerminalSize(console, enterLine.toString());
+                    inputTermSize(console, enterLine.toString());
                     break;
                 case Backspace:
                     if( enterLine.length()>0 ){
@@ -169,7 +182,7 @@ public class Main {
     }
 
     private final Pattern termSizePattern = Pattern.compile("\\s*(?<w>\\d+)\\s+(?<h>\\d+).*?");
-    private void enterTerminalSize(Console console, String line){
+    private void inputTermSize(Console console, String line){
         var m = termSizePattern.matcher(line);
         if( m.matches() ){
             var w = Integer.parseInt(m.group("w"));
@@ -178,7 +191,7 @@ public class Main {
         }
     }
 
-    private Optional<Color> colorInput(InputEvent inputEvent, boolean bright){
+    private Optional<Color> inputColor(InputEvent inputEvent, boolean bright){
         if( inputEvent instanceof InputCharEvent ){
             var ev = (InputCharEvent)inputEvent;
             switch (ev.getChar()){
@@ -196,8 +209,7 @@ public class Main {
             return Optional.empty();
         }
     }
-
-    private void processInput(Console console, InputEvent inputEvent) {
+    private void inputDefault(Console console, InputEvent inputEvent) {
         inputEventCount++;
         if( inputEvent instanceof InputCharEvent ) {
             var ev = (InputCharEvent) inputEvent;
