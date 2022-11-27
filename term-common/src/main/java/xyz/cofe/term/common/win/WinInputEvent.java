@@ -20,6 +20,7 @@ public interface WinInputEvent {
 
     /**
      * <table>
+     *     <caption>codes of keys</caption>
      *     <thead style="font-weight:bold">
      *         <tr>
      *            <td>KeyName</td>
