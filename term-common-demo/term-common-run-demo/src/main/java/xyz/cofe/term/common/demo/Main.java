@@ -6,12 +6,13 @@ import xyz.cofe.term.common.win.WinInputMouseButtonEvent;
 import xyz.cofe.term.win.ConnectToConsole;
 import xyz.cofe.term.win.WinConsole;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 public class Main {
-    private int delayForAttachDebuggerInSeconds = 0;
-
     public static void main(String[] args){
         var main = new Main();
 
@@ -23,6 +24,49 @@ public class Main {
             }
         }
 
+        ArrayList<String> cmdLine = new ArrayList<>(Arrays.asList(args));
+        String state = "init";
+        while (cmdLine.isEmpty()){
+            var arg = cmdLine.remove(0);
+            switch (state){
+                case "init":
+                    switch (arg){
+                        case "-delayForDebug":
+                            state = "-delayForDebug";
+                            break;
+                        case "-win.conn":
+                            state = "-win.conn";
+                            break;
+                    }
+                    break;
+                case "-delayForDebug":
+                    state = "init";
+                    if( arg.matches("\\d+") ){
+                        main.delayForAttachDebuggerInSeconds = Integer.parseInt(arg);
+                    }
+                    break;
+                case "-win.conn":
+                    state = "init";
+                    switch (arg){
+                        case "alloc":
+                        case "AllocConsole":
+                            main.connectToConsole = new ConnectToConsole.AllocConsole();
+                            break;
+                        case "attach":
+                        case "AttachParent":
+                            main.connectToConsole = new ConnectToConsole.AttachParent();
+                            break;
+                        case "tryAttach":
+                        case "TryAttachParent":
+                            main.connectToConsole = new ConnectToConsole.TryAttachParent();
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+            }
+        }
+
         main.run();
     }
 
@@ -30,17 +74,15 @@ public class Main {
         delayForDebuggerAttach();
 
         // build console
-        var winConsole = new WinConsole(new ConnectToConsole.AllocConsole());
-        winConsole.setInputMode(
-            winConsole.getInputMode().quickEdit(false).mouse(true)
-        );
-
-        try (Console console = new WConsole(winConsole)) {
+        try (Console console = buildConsole()) {
             run(console);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+
+    //#region delayForDebuggerAttach
+    private int delayForAttachDebuggerInSeconds = 0;
 
     private void delayForDebuggerAttach() {
         if( delayForAttachDebuggerInSeconds>0 ){
@@ -52,6 +94,25 @@ public class Main {
             }
         }
     }
+    //#endregion
+
+    private enum ConsoleType {
+        Windows
+    }
+
+    private ConnectToConsole connectToConsole = new ConnectToConsole.AllocConsole();
+
+    private Console buildConsole() {
+        var winConsole = new WinConsole(connectToConsole);
+
+        winConsole.setInputMode(
+            winConsole.getInputMode().quickEdit(false).mouse(true)
+        );
+
+        return new WConsole(winConsole);
+    }
+
+    //#region main cycle
 
     private boolean stop = false;
     private int inputEventCount = 0;
@@ -68,46 +129,7 @@ public class Main {
     }
 
     private InputState inputState = InputState.Normal;
-    private StringBuilder enterLine = new StringBuilder();
-
-    private void showStateInTitle(Console console){
-        switch (inputState){
-            case Normal:{
-                    var pos = console.getCursorPosition();
-                    console.setTitle("inputEventCount="+inputEventCount+
-                        " logInput="+logInput+
-                        " cursor { visible="+cursorVisible+" pos{x="+pos.x()+", y="+pos.y()+"} }");
-                }
-                break;
-            case Background:
-                console.setTitle("background expect 1...8");
-                break;
-            case BackgroundLight:
-                console.setTitle("background light expect 1...8");
-                break;
-            case Foreground:
-                console.setTitle("foreground expect 1...8");
-                break;
-            case ForegroundLight:
-                console.setTitle("foreground light expect 1...8");
-                break;
-            case TermSize:
-                console.setTitle("enter terminal size: width height");
-                break;
-        }
-    }
-
-    private void showHelp(Console console){
-        console.setCursorPosition(new Position(0,0));
-        console.write(
-            "press q for exit\n"+
-                "c - cursor off | C - cursor on\n" +
-                "i - log input off | I - log input on\n" +
-                "arrow left,right,up,down - move cursor\n" +
-                "space - write *\n" +
-                "s - read terminal\n"
-        );
-    }
+    private final StringBuilder enterLine = new StringBuilder();
 
     private void run(Console console){
         showHelp(console);
@@ -120,6 +142,7 @@ public class Main {
             var input = console.read();
             if( input.isEmpty() ){
                 try {
+                    //noinspection BusyWait
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -152,6 +175,44 @@ public class Main {
                 showStateInTitle(console);
             }
         }
+    }
+
+    private void showStateInTitle(Console console){
+        switch (inputState){
+            case Normal:{
+                    var pos = console.getCursorPosition();
+                    console.setTitle("inputEventCount="+inputEventCount+
+                        " logInput="+logInput+
+                        " cursor { visible="+cursorVisible+" pos{x="+pos.x()+", y="+pos.y()+"} }");
+                }
+                break;
+            case Background:
+                console.setTitle("background expect 1...8");
+                break;
+            case BackgroundLight:
+                console.setTitle("background light expect 1...8");
+                break;
+            case Foreground:
+                console.setTitle("foreground expect 1...8");
+                break;
+            case ForegroundLight:
+                console.setTitle("foreground light expect 1...8");
+                break;
+            case TermSize:
+                console.setTitle("enter terminal size: width height");
+                break;
+        }
+    }
+    private void showHelp(Console console){
+        console.setCursorPosition(new Position(0,0));
+        console.write(
+            "press q for exit\n"+
+                "c - cursor off | C - cursor on\n" +
+                "i - log input off | I - log input on\n" +
+                "arrow left,right,up,down - move cursor\n" +
+                "space - write *\n" +
+                "s - read terminal\n"
+        );
     }
 
     private void inputTermSize(Console console, InputEvent inputEvent){
@@ -318,4 +379,5 @@ public class Main {
             }
         }
     }
+    //#endregion
 }
