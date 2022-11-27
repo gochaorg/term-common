@@ -349,7 +349,7 @@ public class WinConsole implements Console, GetTitle {
         return !me.isMouseMove() && !me.isVerticalMouseWheel() && !me.isHorizontalMouseWheel();
     }
 
-    private List<MouseButtonState> mouseButtonStates = new ArrayList<>();
+    private final List<MouseButtonState> mouseButtonStates = new ArrayList<>();
 
     private void limit_mouseButtonStates(){
         if( mouseButtonStates.size()>100 ){
