@@ -1,15 +1,18 @@
 package xyz.cofe.term.common.demo;
 
+import com.googlecode.lanterna.terminal.MouseCaptureMode;
+import com.googlecode.lanterna.terminal.ansi.TelnetTerminalServer;
 import xyz.cofe.term.common.*;
-import xyz.cofe.term.common.win.WConsole;
+import xyz.cofe.term.common.nix.NixConsole;
+import xyz.cofe.term.common.nix.NixMouseInputEvent;
+import xyz.cofe.term.common.win.WinConsole;
 import xyz.cofe.term.common.win.WinInputMouseButtonEvent;
 import xyz.cofe.term.win.ConnectToConsole;
-import xyz.cofe.term.win.WinConsole;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 public class Main {
@@ -35,7 +38,28 @@ public class Main {
                             state = "-delayForDebug";
                             break;
                         case "-win.conn":
+                        case "-win.con":
                             state = "-win.conn";
+                            break;
+                        case "-telnet.port":
+                            state = "-telnet.port";
+                            break;
+                        case "-con":
+                        case "-console":
+                            state = "-con";
+                            break;
+                    }
+                    break;
+                case "-con":
+                    state = "init";
+                    switch (arg){
+                        case "win":
+                            main.consoleType = ConsoleType.Windows;
+                            break;
+                        case "telnet":
+                            main.consoleType = ConsoleType.Telnet;
+                            break;
+                        default:
                             break;
                     }
                     break;
@@ -43,6 +67,12 @@ public class Main {
                     state = "init";
                     if( arg.matches("\\d+") ){
                         main.delayForAttachDebuggerInSeconds = Integer.parseInt(arg);
+                    }
+                    break;
+                case "-telnet.port":
+                    state = "init";
+                    if( arg.matches("\\d+") ){
+                        main.telnetPort = Integer.parseInt(arg);
                     }
                     break;
                 case "-win.conn":
@@ -73,7 +103,6 @@ public class Main {
     private void run(){
         delayForDebuggerAttach();
 
-        // build console
         try (Console console = buildConsole()) {
             run(console);
         } catch (Exception e) {
@@ -96,21 +125,62 @@ public class Main {
     }
     //#endregion
 
+    //#region buildConsole
     private enum ConsoleType {
-        Windows
+        Windows,
+        Telnet
     }
 
+    private ConsoleType consoleType = ConsoleType.Telnet;
+
     private ConnectToConsole connectToConsole = new ConnectToConsole.AllocConsole();
+    private int telnetPort = 10234;
 
     private Console buildConsole() {
-        var winConsole = new WinConsole(connectToConsole);
+        switch (consoleType){
+            case Telnet:
+                return buildTelnetConsole();
+            case Windows:
+                return buildWindowsConsole();
+            default:
+                return buildTelnetConsole();
+        }
+    }
+
+    private Console buildWindowsConsole(){
+        var winConsole = new xyz.cofe.term.win.WinConsole(connectToConsole);
 
         winConsole.setInputMode(
             winConsole.getInputMode().quickEdit(false).mouse(true)
         );
 
-        return new WConsole(winConsole);
+        return new WinConsole(winConsole);
     }
+
+    private Console buildTelnetConsole(){
+        try {
+            System.out.println("start telnet server on port "+telnetPort);
+            TelnetTerminalServer server = new TelnetTerminalServer(telnetPort);
+
+            Runtime.getRuntime().addShutdownHook(new Thread(()->{
+                System.out.println("close telnet server");
+                try {
+                    server.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }));
+
+            System.out.println("wait connection on "+telnetPort);
+            var telnetSession = server.acceptConnection();
+            telnetSession.setMouseCaptureMode(MouseCaptureMode.CLICK_RELEASE_DRAG_MOVE);
+
+            return new NixConsole(telnetSession);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    //#endregion
 
     //#region main cycle
 
@@ -203,16 +273,27 @@ public class Main {
                 break;
         }
     }
+
+    private Console endl(Console console){
+        console.setCursorPosition(console.getCursorPosition().move(0,1).x(0));
+        return console;
+    }
+
     private void showHelp(Console console){
-        console.setCursorPosition(new Position(0,0));
-        console.write(
-            "press q for exit\n"+
-                "c - cursor off | C - cursor on\n" +
-                "i - log input off | I - log input on\n" +
-                "arrow left,right,up,down - move cursor\n" +
-                "space - write *\n" +
-                "s - read terminal\n"
-        );
+        String[] lines = new String[]{
+            "press q for exit",
+            "i - log input off | I - log input on",
+            "arrow left,right,up,down - move cursor",
+            "space - write *",
+            "s - read terminal size",
+            "S - set terminal size"
+        };
+        var y = -1;
+        for( var line : lines ){
+            y++;
+            console.setCursorPosition(new Position(0,y));
+            console.write(line);
+        }
     }
 
     private void inputTermSize(Console console, InputEvent inputEvent){
@@ -270,14 +351,18 @@ public class Main {
             return Optional.empty();
         }
     }
+
     private void inputDefault(Console console, InputEvent inputEvent) {
         inputEventCount++;
         if( inputEvent instanceof InputCharEvent ) {
             var ev = (InputCharEvent) inputEvent;
-            if( logInput ) console.write(
-                "input char " + ev.getChar() +
-                " alt="+ev.isAltDown()+" shift="+ev.isShiftDown()+" ctrl="+ev.isControlDown()+
-                    "\n");
+            if( logInput ) {
+                console.write(
+                    "input char " + ev.getChar() +
+                        " alt=" + ev.isAltDown() + " shift=" + ev.isShiftDown() + " ctrl=" + ev.isControlDown()
+                );
+                endl(console);
+            }
 
             switch (ev.getChar()){
                 case 'q':
@@ -313,13 +398,14 @@ public class Main {
                     inputState = InputState.ForegroundLight;
                     break;
                 case 's':
-                    console.write("terminal "+console.getSize()+"\n");
+                    console.write("terminal "+console.getSize());
+                    endl(console);
                     break;
                 case 'S':
-                    console.write("\n" +
-                        "enter terminal size (width height)\n" +
-                        "  sample: 85 30 <enter>\n" +
-                        ": ");
+                    console.write("enter terminal size (width height)"); endl(console);
+                    console.write("  sample: 85 30 <enter>");endl(console);
+                    console.write(": ");
+
                     console.setCursorVisible(true);
                     enterLine.setLength(0);
                     inputState = InputState.TermSize;
@@ -331,7 +417,7 @@ public class Main {
             var ev = (InputKeyEvent) inputEvent;
             if( logInput ) {
                 console.write("input key " + ev.getKey() + " alt=" + ev.isAltDown() + " shift=" + ev.isShiftDown() + " ctrl=" + ev.isControlDown());
-                console.write("\n");
+                endl(console);
             }
             switch (ev.getKey()){
                 case Up: {
@@ -370,12 +456,17 @@ public class Main {
                     var wev = (WinInputMouseButtonEvent) ev;
                     console.write(" " + wev.getEvent());
                 }
-                console.write("\n");
+                if( ev instanceof NixMouseInputEvent ){
+                    var me = ((NixMouseInputEvent)ev).getNixMouseInputEvent();
+                    console.write(" alt="+me.isAltDown()+" ctrl="+me.isCtrlDown()+" shift="+me.isShiftDown());
+                }
+                endl(console);
             }
         }else if( inputEvent instanceof InputResizeEvent ){
             if( logInput ){
                 var ev = (InputResizeEvent)inputEvent;
                 console.write("terminal "+ev.size());
+                endl(console);
             }
         }
     }

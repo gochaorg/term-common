@@ -1,7 +1,6 @@
 package xyz.cofe.term.common.win;
 
 import xyz.cofe.term.common.*;
-import xyz.cofe.term.win.WinConsole;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,12 +8,11 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
-public class WConsole implements Console, GetTitle {
-    private final WinConsole winConsole;
+public class WinConsole implements Console, GetTitle {
+    private final xyz.cofe.term.win.WinConsole winConsole;
 
-    public WConsole(WinConsole winConsole) {
+    public WinConsole(xyz.cofe.term.win.WinConsole winConsole) {
         if (winConsole == null) throw new IllegalArgumentException("winConsole==null");
         this.winConsole = winConsole;
     }

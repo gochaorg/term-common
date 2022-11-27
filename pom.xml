@@ -10,7 +10,6 @@
     <version>0.1-SNAPSHOT</version>
 
     <modules>
-        <module>lanterna-test</module>
         <module>term-common</module>
         <module>term-common-demo</module>
     </modules>

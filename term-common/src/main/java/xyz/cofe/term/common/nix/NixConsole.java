@@ -16,10 +16,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Адоптация для Unix терминалов
  */
-public class NConsole implements Console {
+public class NixConsole implements Console {
     private final ExtendedTerminal terminal;
 
-    public NConsole( ExtendedTerminal terminal ){
+    public NixConsole(ExtendedTerminal terminal ){
         if( terminal==null )throw new IllegalArgumentException("terminal==null");
         this.terminal = terminal;
 
