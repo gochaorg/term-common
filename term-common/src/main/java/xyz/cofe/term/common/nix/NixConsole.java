@@ -187,11 +187,15 @@ public class NixConsole implements Console {
         }
     }
 
+    /**
+     * Синхронное-блокируемое чтение данных
+     * @return прочитанное значение
+     */
     public Optional<InputEvent> readSync() {
         try {
             return read(terminal.readInput());
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new ConsoleError(e);
         }
     }
 
