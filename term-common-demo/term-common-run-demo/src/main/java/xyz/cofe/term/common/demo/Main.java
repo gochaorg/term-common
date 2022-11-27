@@ -1,7 +1,9 @@
 package xyz.cofe.term.common.demo;
 
+import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.MouseCaptureMode;
 import com.googlecode.lanterna.terminal.ansi.TelnetTerminalServer;
+import com.googlecode.lanterna.terminal.ansi.UnixTerminal;
 import xyz.cofe.term.common.*;
 import xyz.cofe.term.common.nix.NixConsole;
 import xyz.cofe.term.common.nix.NixMouseInputEvent;
@@ -29,7 +31,7 @@ public class Main {
 
         ArrayList<String> cmdLine = new ArrayList<>(Arrays.asList(args));
         String state = "init";
-        while (cmdLine.isEmpty()){
+        while (!cmdLine.isEmpty()){
             var arg = cmdLine.remove(0);
             switch (state){
                 case "init":
@@ -58,6 +60,9 @@ public class Main {
                             break;
                         case "telnet":
                             main.consoleType = ConsoleType.Telnet;
+                            break;
+                        case "unix":
+                            main.consoleType = ConsoleType.Unix;
                             break;
                         default:
                             break;
@@ -128,7 +133,8 @@ public class Main {
     //#region buildConsole
     private enum ConsoleType {
         Windows,
-        Telnet
+        Telnet,
+        Unix
     }
 
     private ConsoleType consoleType = ConsoleType.Telnet;
@@ -142,12 +148,26 @@ public class Main {
                 return buildTelnetConsole();
             case Windows:
                 return buildWindowsConsole();
+            case Unix:
+                return buildUnixConsole();
             default:
                 return buildTelnetConsole();
         }
     }
 
+    private Console buildUnixConsole() {
+        try {
+            System.out.println("start unix terminal");
+            var unixTerm = new UnixTerminal();
+            unixTerm.setMouseCaptureMode(MouseCaptureMode.CLICK_RELEASE_DRAG_MOVE);
+            return new NixConsole(unixTerm);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private Console buildWindowsConsole(){
+        System.out.println("start windows terminal");
         var winConsole = new xyz.cofe.term.win.WinConsole(connectToConsole);
 
         winConsole.setInputMode(
@@ -158,6 +178,7 @@ public class Main {
     }
 
     private Console buildTelnetConsole(){
+        System.out.println("start telnet terminal");
         try {
             System.out.println("start telnet server on port "+telnetPort);
             TelnetTerminalServer server = new TelnetTerminalServer(telnetPort);
