@@ -1,6 +1,9 @@
 package xyz.cofe.term.common.win;
 
 import xyz.cofe.term.common.*;
+import xyz.cofe.term.common.err.ConsoleError;
+import xyz.cofe.term.win.CursorInfo;
+import xyz.cofe.term.win.WinConsoleError;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,224 +26,271 @@ public class WinConsole implements Console, GetTitle {
 
     @Override
     public String getTitle() {
-        return winConsole.getTitle();
+        try {
+            return winConsole.getTitle();
+        } catch (WinConsoleError err){
+            throw new ConsoleError(err);
+        }
     }
 
     @Override
     public void setTitle(String title) {
         if (title == null) throw new IllegalArgumentException("title==null");
-        winConsole.setTitle(title);
+        try {
+            winConsole.setTitle(title);
+        } catch (WinConsoleError err){
+            throw new ConsoleError(err);
+        }
     }
 
     @Override
     public Position getCursorPosition() {
-        var p = winConsole.getScreenBufferInfo();
-        return new Position(p.getXCursor(), p.getYCursor());
+        try {
+            var p = winConsole.getScreenBufferInfo();
+            return new Position(p.getXCursor(), p.getYCursor());
+        } catch (WinConsoleError err){
+            throw new ConsoleError(err);
+        }
     }
 
     @Override
     public void setCursorPosition(Position position) {
         if (position == null) throw new IllegalArgumentException("position==null");
-        winConsole.cursor(position.x(), position.y());
+        try {
+            winConsole.cursor(position.x(), position.y());
+        } catch (WinConsoleError err){
+            throw new ConsoleError(err);
+        }
     }
 
     @Override
     public void setCursorPosition(int x, int y) {
-        winConsole.cursor(x, y);
+        try {
+            winConsole.cursor(x, y);
+        } catch (WinConsoleError err){
+            throw new ConsoleError(err);
+        }
     }
 
     @Override
     public Size getSize() {
-        var info = winConsole.getScreenBufferInfo();
-        return new Size(info.getWidth(), info.getHeight());
+        try {
+            var info = winConsole.getScreenBufferInfo();
+            return new Size(info.getWidth(), info.getHeight());
+        } catch (WinConsoleError err){
+            throw new ConsoleError(err);
+        }
     }
 
     @Override
     public void setSize(Size size) {
         if (size == null) throw new IllegalArgumentException("size==null");
-        winConsole.getOutput().windowRect(0, 0, size.width() - 1, size.height() - 1);
-        winConsole.getOutput().bufferSize(size.width(), size.height());
+        try {
+            winConsole.getOutput().windowRect(0, 0, size.width() - 1, size.height() - 1);
+            winConsole.getOutput().bufferSize(size.width(), size.height());
+        } catch (WinConsoleError err){
+            throw new ConsoleError(err);
+        }
     }
 
     @Override
     public void setForeground(Color color) {
         if (color == null) throw new IllegalArgumentException("color==null");
-        switch (color) {
-            case Black:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(false).fgGreen(false).fgBlue(false).fgIntensity(false)
-                );
-                break;
-            case BlackBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(false).fgGreen(false).fgBlue(false).fgIntensity(true)
-                );
-                break;
-            case Red:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(true).fgGreen(false).fgBlue(false).fgIntensity(false)
-                );
-                break;
-            case RedBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(true).fgGreen(false).fgBlue(false).fgIntensity(true)
-                );
-                break;
-            case Green:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(false).fgGreen(true).fgBlue(false).fgIntensity(false)
-                );
-                break;
-            case GreenBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(false).fgGreen(true).fgBlue(false).fgIntensity(true)
-                );
-                break;
-            case Yellow:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(true).fgGreen(true).fgBlue(false).fgIntensity(false)
-                );
-                break;
-            case YellowBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(true).fgGreen(true).fgBlue(false).fgIntensity(true)
-                );
-                break;
-            case Blue:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(false).fgGreen(false).fgBlue(true).fgIntensity(false)
-                );
-                break;
-            case BlueBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(false).fgGreen(false).fgBlue(true).fgIntensity(true)
-                );
-                break;
-            case Magenta:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(true).fgGreen(false).fgBlue(true).fgIntensity(false)
-                );
-                break;
-            case MagentaBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(true).fgGreen(false).fgBlue(true).fgIntensity(true)
-                );
-                break;
-            case Cyan:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(false).fgGreen(true).fgBlue(true).fgIntensity(false)
-                );
-                break;
-            case CyanBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(false).fgGreen(true).fgBlue(true).fgIntensity(true)
-                );
-                break;
-            case White:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(true).fgGreen(true).fgBlue(true).fgIntensity(false)
-                );
-                break;
-            case WhiteBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().fgRed(true).fgGreen(true).fgBlue(true).fgIntensity(true)
-                );
-                break;
+        try {
+            switch (color) {
+                case Black:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(false).fgGreen(false).fgBlue(false).fgIntensity(false)
+                    );
+                    break;
+                case BlackBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(false).fgGreen(false).fgBlue(false).fgIntensity(true)
+                    );
+                    break;
+                case Red:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(true).fgGreen(false).fgBlue(false).fgIntensity(false)
+                    );
+                    break;
+                case RedBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(true).fgGreen(false).fgBlue(false).fgIntensity(true)
+                    );
+                    break;
+                case Green:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(false).fgGreen(true).fgBlue(false).fgIntensity(false)
+                    );
+                    break;
+                case GreenBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(false).fgGreen(true).fgBlue(false).fgIntensity(true)
+                    );
+                    break;
+                case Yellow:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(true).fgGreen(true).fgBlue(false).fgIntensity(false)
+                    );
+                    break;
+                case YellowBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(true).fgGreen(true).fgBlue(false).fgIntensity(true)
+                    );
+                    break;
+                case Blue:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(false).fgGreen(false).fgBlue(true).fgIntensity(false)
+                    );
+                    break;
+                case BlueBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(false).fgGreen(false).fgBlue(true).fgIntensity(true)
+                    );
+                    break;
+                case Magenta:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(true).fgGreen(false).fgBlue(true).fgIntensity(false)
+                    );
+                    break;
+                case MagentaBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(true).fgGreen(false).fgBlue(true).fgIntensity(true)
+                    );
+                    break;
+                case Cyan:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(false).fgGreen(true).fgBlue(true).fgIntensity(false)
+                    );
+                    break;
+                case CyanBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(false).fgGreen(true).fgBlue(true).fgIntensity(true)
+                    );
+                    break;
+                case White:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(true).fgGreen(true).fgBlue(true).fgIntensity(false)
+                    );
+                    break;
+                case WhiteBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().fgRed(true).fgGreen(true).fgBlue(true).fgIntensity(true)
+                    );
+                    break;
+            }
+        } catch (WinConsoleError err){
+            throw new ConsoleError(err);
         }
     }
 
     @Override
     public void setBackground(Color color) {
         if (color == null) throw new IllegalArgumentException("color==null");
-        switch (color) {
-            case Black:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(false).bgGreen(false).bgBlue(false).bgIntensity(false)
-                );
-                break;
-            case BlackBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(false).bgGreen(false).bgBlue(false).bgIntensity(true)
-                );
-                break;
-            case Red:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(true).bgGreen(false).bgBlue(false).bgIntensity(false)
-                );
-                break;
-            case RedBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(true).bgGreen(false).bgBlue(false).bgIntensity(true)
-                );
-                break;
-            case Green:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(false).bgGreen(true).bgBlue(false).bgIntensity(false)
-                );
-                break;
-            case GreenBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(false).bgGreen(true).bgBlue(false).bgIntensity(true)
-                );
-                break;
-            case Yellow:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(true).bgGreen(true).bgBlue(false).bgIntensity(false)
-                );
-                break;
-            case YellowBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(true).bgGreen(true).bgBlue(false).bgIntensity(true)
-                );
-                break;
-            case Blue:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(false).bgGreen(false).bgBlue(true).bgIntensity(false)
-                );
-                break;
-            case BlueBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(false).bgGreen(false).bgBlue(true).bgIntensity(true)
-                );
-                break;
-            case Magenta:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(true).bgGreen(false).bgBlue(true).bgIntensity(false)
-                );
-                break;
-            case MagentaBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(true).bgGreen(false).bgBlue(true).bgIntensity(true)
-                );
-                break;
-            case Cyan:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(false).bgGreen(true).bgBlue(true).bgIntensity(false)
-                );
-                break;
-            case CyanBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(false).bgGreen(true).bgBlue(true).bgIntensity(true)
-                );
-                break;
-            case White:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(true).bgGreen(true).bgBlue(true).bgIntensity(false)
-                );
-                break;
-            case WhiteBright:
-                winConsole.setCharAttributes(
-                    winConsole.getCharAttributes().bgRed(true).bgGreen(true).bgBlue(true).bgIntensity(true)
-                );
-                break;
+        try {
+            switch (color) {
+                case Black:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(false).bgGreen(false).bgBlue(false).bgIntensity(false)
+                    );
+                    break;
+                case BlackBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(false).bgGreen(false).bgBlue(false).bgIntensity(true)
+                    );
+                    break;
+                case Red:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(true).bgGreen(false).bgBlue(false).bgIntensity(false)
+                    );
+                    break;
+                case RedBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(true).bgGreen(false).bgBlue(false).bgIntensity(true)
+                    );
+                    break;
+                case Green:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(false).bgGreen(true).bgBlue(false).bgIntensity(false)
+                    );
+                    break;
+                case GreenBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(false).bgGreen(true).bgBlue(false).bgIntensity(true)
+                    );
+                    break;
+                case Yellow:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(true).bgGreen(true).bgBlue(false).bgIntensity(false)
+                    );
+                    break;
+                case YellowBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(true).bgGreen(true).bgBlue(false).bgIntensity(true)
+                    );
+                    break;
+                case Blue:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(false).bgGreen(false).bgBlue(true).bgIntensity(false)
+                    );
+                    break;
+                case BlueBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(false).bgGreen(false).bgBlue(true).bgIntensity(true)
+                    );
+                    break;
+                case Magenta:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(true).bgGreen(false).bgBlue(true).bgIntensity(false)
+                    );
+                    break;
+                case MagentaBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(true).bgGreen(false).bgBlue(true).bgIntensity(true)
+                    );
+                    break;
+                case Cyan:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(false).bgGreen(true).bgBlue(true).bgIntensity(false)
+                    );
+                    break;
+                case CyanBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(false).bgGreen(true).bgBlue(true).bgIntensity(true)
+                    );
+                    break;
+                case White:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(true).bgGreen(true).bgBlue(true).bgIntensity(false)
+                    );
+                    break;
+                case WhiteBright:
+                    winConsole.setCharAttributes(
+                        winConsole.getCharAttributes().bgRed(true).bgGreen(true).bgBlue(true).bgIntensity(true)
+                    );
+                    break;
+            }
+        } catch (WinConsoleError err){
+            throw new ConsoleError(err);
         }
     }
 
     @Override
     public void setCursorVisible(boolean visible) {
-        winConsole.setCursorInfo(
-            winConsole.getCursorInfo().visible(visible)
-        );
+        CursorInfo c;
+        try {
+            c = winConsole.getCursorInfo();
+        } catch (WinConsoleError err){
+            throw new ConsoleError(err);
+        }
+
+        try {
+            winConsole.setCursorInfo(
+                c.visible(true)
+            );
+        } catch (WinConsoleError err){
+            throw new ConsoleError(err);
+        }
     }
 
     private final Queue<InputEvent> eventBuffer = new ConcurrentLinkedQueue<>();
@@ -252,15 +302,19 @@ public class WinConsole implements Console, GetTitle {
 
         var evCnt = winConsole.getAvailableInputEventsCount();
         if (evCnt > 0) {
-            var evList = winConsole.read(evCnt);
-            eventBuffer.addAll(parseInputEvent(evList));
-            if( !eventBuffer.isEmpty() ){
-                ev = eventBuffer.poll();
-                if( ev!=null ){
-                    return Optional.of(ev);
-                }else{
-                    return Optional.empty();
+            try {
+                var evList = winConsole.read(evCnt);
+                eventBuffer.addAll(parseInputEvent(evList));
+                if( !eventBuffer.isEmpty() ){
+                    ev = eventBuffer.poll();
+                    if( ev!=null ){
+                        return Optional.of(ev);
+                    }else{
+                        return Optional.empty();
+                    }
                 }
+            } catch (WinConsoleError err){
+                throw new ConsoleError(err);
             }
         }
 
@@ -406,6 +460,10 @@ public class WinConsole implements Console, GetTitle {
     @Override
     public void write(String text) {
         if( text==null )throw new IllegalArgumentException("text==null");
-        winConsole.write(text);
+        try {
+            winConsole.write(text);
+        } catch (WinConsoleError err){
+            throw new ConsoleError(err);
+        }
     }
 }
