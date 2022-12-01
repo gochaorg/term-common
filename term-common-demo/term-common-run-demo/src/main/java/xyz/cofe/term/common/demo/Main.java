@@ -4,6 +4,7 @@ import com.googlecode.lanterna.terminal.MouseCaptureMode;
 import com.googlecode.lanterna.terminal.ansi.TelnetTerminalServer;
 import com.googlecode.lanterna.terminal.ansi.UnixTerminal;
 import xyz.cofe.term.common.*;
+import xyz.cofe.term.common.nix.NixAsyncConsole;
 import xyz.cofe.term.common.nix.NixConsole;
 import xyz.cofe.term.common.nix.NixMouseInputEvent;
 import xyz.cofe.term.common.win.WinConsole;
@@ -55,6 +56,12 @@ public class Main {
                             break;
                         case "-asyncReader":
                             main.asyncReader = true;
+                            break;
+                        case "-nix.async":
+                            main.nixAsync = true;
+                            break;
+                        case "-nix.sync":
+                            main.nixAsync = false;
                             break;
                     }
                     break;
@@ -147,6 +154,7 @@ public class Main {
 
     private ConnectToConsole connectToConsole = new ConnectToConsole.AllocConsole();
     private int telnetPort = 10234;
+    private boolean nixAsync = false;
 
     private Console buildConsole() {
         switch (consoleType){
@@ -160,18 +168,16 @@ public class Main {
                 return buildTelnetConsole();
         }
     }
-
     private Console buildUnixConsole() {
         try {
             System.out.println("start unix terminal");
             var unixTerm = new UnixTerminal();
             unixTerm.setMouseCaptureMode(MouseCaptureMode.CLICK_RELEASE_DRAG_MOVE);
-            return new NixConsole(unixTerm);
+            return nixAsync ? new NixAsyncConsole(unixTerm) : new NixConsole(unixTerm);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
-
     private Console buildWindowsConsole(){
         System.out.println("start windows terminal");
         var winConsole = new xyz.cofe.term.win.WinConsole(connectToConsole);
@@ -182,7 +188,6 @@ public class Main {
 
         return new WinConsole(winConsole);
     }
-
     private Console buildTelnetConsole(){
         System.out.println("start telnet terminal");
         try {
