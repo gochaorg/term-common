@@ -1,6 +1,7 @@
 package xyz.cofe.term.common;
 
 import com.googlecode.lanterna.terminal.MouseCaptureMode;
+import com.googlecode.lanterna.terminal.ansi.TelnetTerminalServer;
 import com.googlecode.lanterna.terminal.ansi.UnixTerminal;
 import xyz.cofe.term.common.err.ConsoleError;
 import xyz.cofe.term.common.nix.NixAsyncConsole;
@@ -46,7 +47,7 @@ import java.util.stream.Collectors;
  *         </ul>
  *     </li>
  *     <li>
- *         <b>nix.async.reader</b> = true
+ *         <b>nix.async</b> = true
  *         <ul>
  *             <li>Возможные значения: true | false</li>
  *             <li>По умолчанию true</li>
@@ -143,6 +144,15 @@ public class ConsoleBuilder {
         if( validate!=null && !validate.test(value) )return defaultValue;
         return value;
     }
+    @SuppressWarnings("SameParameterValue")
+    private static int readInt(String key, int defaultValue, Predicate<Integer> validate){
+        var res = read(key,Integer.toString(defaultValue), str -> str.matches("[+\\-]?\\d+"));
+        try {
+            return Integer.parseInt(res);
+        } catch (Throwable err){
+            return defaultValue;
+        }
+    }
     //endregion
 
     private static String osName(){ return System.getProperty("os.name","nix"); }
@@ -154,11 +164,13 @@ public class ConsoleBuilder {
      * @see #autoConsole()
      */
     public static Console defaultConsole(){
-        switch ( read("default","auto", str -> List.of("auto", "win", "nix").contains(str)) ){
+        switch ( read("default","auto", str -> List.of("auto", "win", "nix", "telnet").contains(str)) ){
             case "win":
                 return windowsConsole();
             case "nix":
                 return nixConsole();
+            case "telnet":
+                return telnetConsole();
             case "auto":
             default:
                 return autoConsole();
@@ -209,10 +221,42 @@ public class ConsoleBuilder {
             UnixTerminal terminal = new UnixTerminal();
             terminal.setMouseCaptureMode(MouseCaptureMode.CLICK_RELEASE_DRAG_MOVE);
 
-            var async_str = read("nix.async.reader", "true", str -> List.of("true","false").contains(str));
+            var async_str = read("nix.async", "true", str -> List.of("true","false").contains(str));
             var async = "true".equals(async_str);
 
             return async ? new NixAsyncConsole(terminal) : new NixConsole(terminal);
+        } catch (IOException e) {
+            throw new ConsoleError(e);
+        }
+    }
+
+    public static Console telnetConsole(){
+        int telnetPort = readInt("telnet.port", 12345, num -> num>0 && num<65536 );
+
+        try {
+            System.out.println("start telnet server on port "+telnetPort);
+            TelnetTerminalServer server = new TelnetTerminalServer(telnetPort);
+
+            Runtime.getRuntime().addShutdownHook(new Thread(()->{
+                System.out.println("close telnet server");
+                try {
+                    server.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }));
+
+            System.out.println("wait connection on "+telnetPort);
+            System.out.println("  for connect type in shell (bash/cmd): telnet localhost "+telnetPort);
+            var telnetSession = server.acceptConnection();
+
+            System.out.println("telnet connection accepted");
+            telnetSession.setMouseCaptureMode(MouseCaptureMode.CLICK_RELEASE_DRAG_MOVE);
+
+            var async_str = read("telnet.async", "true", str -> List.of("true","false").contains(str));
+            var async = "true".equals(async_str);
+
+            return async ? new NixAsyncConsole(telnetSession) : new NixConsole(telnetSession);
         } catch (IOException e) {
             throw new ConsoleError(e);
         }
