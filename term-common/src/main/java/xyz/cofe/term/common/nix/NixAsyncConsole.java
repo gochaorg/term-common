@@ -17,6 +17,25 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
+/**
+ * Консоль с асинхронным чтением входных данных.
+ * При обычном чтении ({@link NixConsole}) - медленно.
+ *
+ * <ul>
+ *     <li>
+ *          Создает отдельный поток для чтения нажатий клавиш/мыши и других входных данных.
+ *          <br> Копирует события во внутренюю очередь
+ *          <br> Данные читаются при помощи {@link #readSync()}
+ *     </li>
+ *     <li>
+ *         Создает очередь для чтения входных из основного потока исполнения.
+ *         <br> Из очереди данные читаются при помощи {@link #read()}
+ *     </li>
+ *     <li>
+ *         Фоноый поток помечен как daemon и уничтожается либо при вызове close либо при завершении работы jvm
+ *     </li>
+ * </ul>
+ */
 public class NixAsyncConsole extends NixConsole {
     public NixAsyncConsole(ExtendedTerminal terminal) {
         super(terminal);
