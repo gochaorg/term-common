@@ -63,6 +63,12 @@ public class Position {
         return new Position(x,y);
     }
 
+    /**
+     * Смещение координат
+     * @param x смещение по оси x
+     * @param y смещение по оси y
+     * @return новая, смещенная позиция
+     */
     public Position move(int x, int y){
         return new Position(this.x + x, this.y + y);
     }

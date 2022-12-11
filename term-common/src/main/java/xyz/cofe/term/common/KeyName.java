@@ -28,6 +28,10 @@ package xyz.cofe.term.common;
 // Tab        InputKeyEvent{keyDown=true, repeatCount=1,  keyCode=9  , scanCode=15 , character=state={}}
 // ReverseTab InputKeyEvent{keyDown=true, repeatCount=1,  keyCode=   , scanCode=   , character=state={}} ?
 // Enter      InputKeyEvent{keyDown=true, repeatCount=1,  keyCode=13 , scanCode=28 , character=state={}}
+
+/**
+ * Специальная клавиша клавиатуры
+ */
 public enum KeyName {
     F1, F2, F3, F4, F5, F6,
     F7, F8, F9, F10, F11, F12,

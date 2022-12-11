@@ -36,21 +36,78 @@ import java.util.stream.Collectors;
  *       <b>term-common.properties</b>
  * </pre>
  *
- * Файл может содержать следующие свойства
+ * Файл может содержать следующие свойства, все свойства опциональны
  *
  * <ul>
  *     <li>
+ *         <b>order</b> : String - значение используемое при сортировке (лексической), если найдено
+ *         несколько файлов term-common.properties в classpath.
+ *
+ *         <br> Значение по умолчанию - 5555
+ *
+ *         <br> Если найдено несколько файлов, то читаются все свойства, из всех файлов, а
+ *          потом все свойства сливатся в одну карту Map&lt; String, String &gt;.
+ *
+ *          <br>
+ *          Сливатся - в последовательности определенной значением order для файла
+ *
+ *          <pre>
+ *  some-a.jar/term-common.properties
+ *    order = 0010
+ *    value1 = 1
+ *    value2 = 2
+ *  some-b.jar/term-common.properties
+ *    order = 0009
+ *    value1 = 3
+ *    value3 = 2
+ *          </pre>
+ *
+ *          значение order в данном случае такое
+ *          <pre>0009 < 00010</pre>
+ *
+ *          В результате будет так
+ *
+ *          <pre>
+ * value1 = 3 <i>заменено файлов со значением order = 00010</i>
+ * value2 = 2 <i>значение из файла со значением order = 00010</i>
+ * value3 = 3 <i>значение из файла со значением order = 00009</i
+ *          </pre>
+ *     </li>
+ *     <li>
  *         <b>default</b> = auto
  *         <ul>
- *             <li>Возможные значения: auto | nix | win</li>
+ *             <li>Возможные значения: auto | nix | win | telnet</li>
  *             <li>По умолчанию auto</li>
  *         </ul>
+ *         Для auto - выбирается в зависимости ос системного свйоства
+ *         <code>System.getProperty("os.name","nix")</code>
+ *
+ *         <br>
+ *         Если в имени ОС присуствуют символы window, без учета регистра
+ *         <code>isWinOs(){ return osName().toLowerCase().contains("window"); }</code>
+ *
+ *         <br>
+ *         тогда выбирается win, иначе nix
  *     </li>
  *     <li>
  *         <b>nix.async</b> = true
  *         <ul>
  *             <li>Возможные значения: true | false</li>
  *             <li>По умолчанию true</li>
+ *         </ul>
+ *     </li>
+ *     <li>
+ *         <b>telnet.async</b> = true
+ *         <ul>
+ *             <li>Возможные значения: true | false</li>
+ *             <li>По умолчанию true</li>
+ *         </ul>
+ *     </li>
+ *     <li>
+ *         <b>telnet.port</b> = 12345
+ *         <ul>
+ *             <li>Возможные значения в диапазоне о 1 до 65536 (искл)</li>
+ *             <li>По умолчанию 12345</li>
  *         </ul>
  *     </li>
  *     <li>
@@ -114,7 +171,7 @@ public class ConsoleBuilder {
         Map<String, List<Properties>> ordered = new TreeMap<>();
         config.forEach( conf -> {
             ordered.computeIfAbsent(
-                conf.getProperty(ORDER_FIELD, "0000"),
+                conf.getProperty(ORDER_FIELD, "5555"),
                 x -> new ArrayList<>()
             ).add(conf);
         });
@@ -230,6 +287,10 @@ public class ConsoleBuilder {
         }
     }
 
+    /**
+     * Поднимает telnet сервер и ждет подключения
+     * @return Консоль - терминал telnet
+     */
     public static Console telnetConsole(){
         int telnetPort = readInt("telnet.port", 12345, num -> num>0 && num<65536 );
 
