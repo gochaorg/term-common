@@ -7,10 +7,26 @@
 
 Запуск linux
 
-    java -cp "target/runner/jars/*" xyz.cofe.term.common.demo.Main опции
+  `java -cp "target/runner/jars/*" xyz.cofe.term.common.demo.Main` _опции_
 
 Запуск windows
 
-    target/runner/bin/app.bat опции
+  `target/runner/bin/app.bat` опции
 
 Опции
+
+ - `-con` _тип консоли_
+ - `-console` _тип консоли_
+ - _тип консоли_ 
+   - `win`  - консоль для Windows OS
+   - `unix` - консоль для Linux / Mac OS
+   - `telnet` - консоль - Telnet server
+ - `-win.conn` _тип инициализации консоли_
+ - _тип инициализации консоли_
+   - `alloc` либо `AllocConsole` - Создание новой консоли
+   - `attach` либо `AttachParent` - Присоединение к родительской консоли
+   - `tryAttach` либо `TryAttachParent` - Попытка сначала присоединиться к родительской, если не успешно - создание новой консоли
+ - `-telnet.port` _порт_ - указывает порт telnet сервера
+ - `-asyncReader` - для любой консоли (win|unix|telnet) - явное создание потока для чтения входящих нажатий мыши/клавиатуры
+ - `-nix.async` - для unix консоли - создание фонового потока чтения входящих нажатий мыши/клавиатуры
+ - `-nix.sync` - для unix консоли - использование одного потока и для чтения данных и для вывода на экран
