@@ -196,6 +196,9 @@ public class ConsoleBuilder {
       */
     @SuppressWarnings("SameParameterValue")
     private static String read(String key, String defaultValue, Predicate<String> validate){
+        var sysPropValue = System.getProperty("xyz.cofe.term."+key);
+        if( sysPropValue!=null && sysPropValue.length()>0 )return sysPropValue;
+
         if( !config.containsKey(key) )return defaultValue;
         var value = config.get(key);
         if( validate!=null && !validate.test(value) )return defaultValue;

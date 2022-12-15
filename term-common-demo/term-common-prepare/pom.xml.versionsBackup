@@ -5,7 +5,7 @@
     <parent>
         <artifactId>term-common-demo</artifactId>
         <groupId>xyz.cofe</groupId>
-        <version>0.1</version>
+        <version>0.2</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -17,6 +17,4 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <build>
-    </build>
 </project>

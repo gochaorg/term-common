@@ -10,6 +10,7 @@ import xyz.cofe.term.common.err.ConsoleError;
 import xyz.cofe.term.common.ev.InputResizeEventImpl;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -253,6 +254,8 @@ public abstract class NixAbstractConsole implements Console {
         return terminal(term -> {
             try {
                 return read(term.readInput());
+            } catch (SocketTimeoutException e){
+                return Optional.empty();
             } catch (IOException e) {
                 throw new ConsoleError(e);
             }
