@@ -18,7 +18,7 @@ import java.util.function.Function;
  * Адоптация для Unix терминалов
  */
 public class NixConsole extends NixAbstractConsole {
-    protected final ExtendedTerminal terminal;
+    public final ExtendedTerminal terminal;
 
     public NixConsole( ExtendedTerminal terminal ){
         if( terminal==null )throw new IllegalArgumentException("terminal==null");

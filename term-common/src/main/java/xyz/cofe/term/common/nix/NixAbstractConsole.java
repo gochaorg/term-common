@@ -215,7 +215,10 @@ public abstract class NixAbstractConsole implements Console {
         if( closed )throw new IllegalStateException("closed");
         terminal(term -> {
             try {
-                term.putString(text);
+                //term.putString(text);
+                for(int i=0;i<text.length();i++ ){
+                    term.putCharacter(text.charAt(i));
+                }
             } catch (IOException e) {
                 throw new ConsoleError(e);
             }
